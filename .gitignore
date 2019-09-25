@@ -1,0 +1,9 @@
+dummy/
+past/
+weights/
+models/
+data/cleaned_arabic_dataset.csv
+jupyter/
+.vscode/
+.ipynb_checkpoints/
+__pycache__/
