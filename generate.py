@@ -1,33 +1,29 @@
-from utils import getLettersAndDiacritics, convert_to_two_hot
 import sys
 import numpy as np
 from keras.models import load_model
+from utils import getLettersAndDiacritics, convert_to_two_hot, convert_indexes_to_char
 
 
-def generate_output(model, Tx=40, n_x=41):
+def generate_output(model, Tx=40, n_x=42):
     generated = ''
-    # sentence = text[start_index: start_index + Tx]
-    # sentence = '0'*Tx
-    # usr_input = input("Write the beginning of your poem, the Shakespeare machine will complete it. Your input is: ")
-    # zero pad the sentence to Tx characters.
-    usr_input = 'ش'
+    usr_input = 'بلب'
 
-    sentence = ('{0:0>' + str(Tx) + '}').format(usr_input).lower()
+    sentence = ('{0:0<' + str(Tx) + '}').format(usr_input).lower()
     generated += usr_input
 
     sys.stdout.write("\n\nHere is your poem: \n\n")
     sys.stdout.write(usr_input)
-    for i in range(400):
+    for i in range(100):
         x_pred = np.zeros((1, Tx, n_x))
-        for t, char in enumerate(sentence):
-            if char != '0':
-                x_pred[0, t] = convert_to_two_hot(char)
+        two_hot_vec = np.squeeze(convert_to_two_hot(sentence.split('0')[0]))
+        x_pred[0][:len(two_hot_vec)] = two_hot_vec
+
         preds = model.predict(x_pred, verbose=0)[0]
         next_index = sample(preds, temperature=1.0)
-        next_char = index_to_letter[next_index]
+        next_char = convert_indexes_to_char(next_index)
 
         generated += next_char
-        sentence = sentence[1:] + next_char
+        sentence = sentence + next_char
 
         sys.stdout.write(next_char)
         sys.stdout.flush()
@@ -41,9 +37,14 @@ def sample(preds, temperature=1.0):
     preds = np.log(preds) / temperature
     exp_preds = np.exp(preds)
     preds = exp_preds / np.sum(exp_preds)
-    probas = np.random.multinomial(1, preds, 1)
-    out = np.random.choice(range(41), p=probas.ravel())
-    return out
+    probas = np.random.multinomial(100, preds, 1)/100
+    out1 = np.random.choice(range(42), 1, p=probas.ravel())
+    out2 = np.random.choice(range(42), 1, p=probas.ravel())
+    dia = [0, 38, 39, 40, 41, 42]
+    while(out1 == out2 or (out1 in dia and out2 in dia)):
+        out2 = np.random.choice(range(42), 1, p=probas.ravel())
+
+    return [out1[0], out2[0]]
 
 
 letters, diacritics = getLettersAndDiacritics()
@@ -51,5 +52,5 @@ letters, diacritics = getLettersAndDiacritics()
 lettersAndDiacritics = letters + diacritics
 index_to_letter = dict((i, c) for i, c in enumerate(lettersAndDiacritics))
 
-model = load_model(  # such and such)
-generate_output(models)
+model = load_model('my_model')
+generate_output(model)
